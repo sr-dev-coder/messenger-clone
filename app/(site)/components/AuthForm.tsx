@@ -2,18 +2,28 @@
 import axios from "axios";
 import Button from "@/app/components/Button";
 import Input from "@/app/components/inputs/input";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FieldValues, SubmitErrorHandler, useForm } from "react-hook-form";
 import AuthSocialButton from "./AuthSocialButton";
 import { BsGithub, BsGoogle } from "react-icons/bs";
 import toast from "react-hot-toast";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type variant = 'LOGIN' | 'REGISTER';
 
 const AuthForm = () => {
+  const session = useSession();
+  const router = useRouter();
   const [variant, setVariant] = useState<variant>('LOGIN');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() =>{
+    if(session?.status === 'authenticated'){
+        console.log('authenticated')
+        router.push('/users')
+    }
+  }, [session?.status, router])
 
   const toggleVariant = useCallback(() => {
     if(variant === 'LOGIN'){
@@ -36,6 +46,7 @@ const AuthForm = () => {
     if(variant === 'REGISTER'){
         //Axios Register
         axios.post('/api/register', data)
+        .then(() => signIn('credentials', data))
         .catch(() => toast.error('Something went wrong!'))
         .finally(() => setLoading(false))
     }
@@ -51,15 +62,28 @@ const AuthForm = () => {
             }
             if(callback?.ok && !callback?.error){
                 toast.success('logged in!')
+                router.push('/users')
             }
         })
         .finally(() => setLoading(false))
     }
-
-    const socialAction = (action: string) => {
-        setLoading(true);
-    }
   }
+  
+const socialAction = (action: string) => {
+    setLoading(true);
+    signIn(action, { redirect: false})
+    .then((callback) => {
+        if(callback?.error){
+            toast.error('Invalid credentials')
+        }
+        if(callback?.ok && !callback?.error){
+            toast.success('logged in!')
+            router.push('/users')
+        }
+    })
+    .finally(() => setLoading(false))
+}
+
   return (
     <div
         className="mt-8 sm:mx-auto sm:w-full sm:max-w-md"
