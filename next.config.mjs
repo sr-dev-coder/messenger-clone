@@ -2,6 +2,9 @@
 const nextConfig = {
     experimental:{
         swcPlugins: [["next-superjson-plugin", {}]]
+    },
+    images:{
+        domains: ['avatars.githubusercontent.com']
     }
 };
 
